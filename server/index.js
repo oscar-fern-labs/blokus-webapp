@@ -321,7 +321,16 @@ app.post('/api/games/:id/place', async (req,res)=>{
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Blokus backend listening on port ${PORT}`);
-});
+// Initialize DB then start server
+(async () => {
+  try {
+    await initDb();
+    app.listen(PORT, () => {
+      console.log(`Blokus backend listening on port ${PORT}`);
+    });
+  } catch (e) {
+    console.error('Failed to initialize database:', e);
+    process.exit(1);
+  }
+})();
 
