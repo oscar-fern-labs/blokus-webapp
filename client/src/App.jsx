@@ -50,6 +50,36 @@ function transform(shape, rotation=0, flipped=false){
   let minX = Math.min(...cells.map(c=>c[0]));
   let minY = Math.min(...cells.map(c=>c[1]));
   cells = cells.map(([x,y])=>[x-minX,y-minY]);
+  return cells;
+}
+
+function cornerFor(color){
+  switch(color){
+    case 'blue': return {x:0, y:0};
+    case 'yellow': return {x:BOARD_SIZE-1, y:0};
+    case 'red': return {x:BOARD_SIZE-1, y:BOARD_SIZE-1};
+    case 'green': return {x:0, y:BOARD_SIZE-1};
+    default: return null;
+  }
+}
+
+function playerHasAny(color, occ){
+  for (let yy=0; yy<BOARD_SIZE; yy++){
+    for (let xx=0; xx<BOARD_SIZE; xx++){
+      if (occ[yy][xx] === color) return true;
+    }
+  }
+  return false;
+}
+
+function CornerHint({ color }){
+  if (!color) return null;
+  const start = cornerFor(color);
+  if (!start) return null;
+  const left = start.x * 24;
+  const top = start.y * 24;
+  return <div style={{ position:'absolute', left, top, width:24, height:24, border:'2px solid '+COLORS[color], borderRadius:4, boxShadow:'0 0 0 2px #fff', pointerEvents:'none' }} title={`${color} starts here`} />;
+}
 
 function canPlaceLocal({ piece, rotation, flipped, anchor, color, occ, game }){
   if (!piece || !anchor || !color || !occ) return false;
@@ -62,12 +92,7 @@ function canPlaceLocal({ piece, rotation, flipped, anchor, color, occ, game }){
     if (occ[y][x]) return false;
   }
   // Determine if this player has already placed any piece
-  let hasAny = false;
-  outer: for (let yy=0; yy<BOARD_SIZE; yy++) {
-    for (let xx=0; xx<BOARD_SIZE; xx++) {
-      if (occ[yy][xx] === color) { hasAny = true; break outer; }
-    }
-  }
+  const hasAny = playerHasAny(color, occ);
   // 4-neighbor adjacency with same color is not allowed
   const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
   for (const {x,y} of targets) {
@@ -101,9 +126,6 @@ function canPlaceLocal({ piece, rotation, flipped, anchor, color, occ, game }){
   }
   // Subsequent moves: must touch diagonally at least once
   return touchesDiagonal;
-}
-
-  return cells;
 }
 
 export default function App(){
@@ -200,17 +222,18 @@ export default function App(){
 
         {game && (
           <div style={{marginBottom:12, display:'flex', gap:16, color:'#4b5563'}}>
-            <div>Game: {game.game.id.slice(0,8)}</div>
             <div style={{fontSize:13, background:'#fff', padding:'6px 10px', border:'1px solid #e5e7eb', borderRadius:8}}>Game: {game.game.id.slice(0,8)}</div>
-
-            <div>Next: <b style={{color:COLORS[currentColor]}}>{currentColor}</b></div>
-            <div>Moves: {game.moves.length}</div>
+            <div style={{fontSize:13, background:'#fff', padding:'6px 10px', border:'1px solid #e5e7eb', borderRadius:8}}>Next: <b style={{color:COLORS[currentColor]}}>{currentColor}</b></div>
+            <div style={{fontSize:13, background:'#fff', padding:'6px 10px', border:'1px solid #e5e7eb', borderRadius:8}}>Moves: {game.moves.length}</div>
           </div>
         )}
         <div style={gridStyle}
           onMouseLeave={()=>setHover(null)}
-        >
+>
+          <CornerHint color={currentColor} />
           {Array.from({length:BOARD_SIZE * BOARD_SIZE}).map((_, i) => {
+          <CornerHint color={currentColor} />
+
             const x = i % BOARD_SIZE; const y = Math.floor(i / BOARD_SIZE);
             return (
               <div key={`${x},${y}`}
@@ -250,16 +273,6 @@ export default function App(){
             </button>
           ))}
 
-function cornerFor(color){
-  switch(color){
-    case 'blue': return {x:0, y:0};
-    case 'yellow': return {x:BOARD_SIZE-1, y:0};
-    case 'red': return {x:BOARD_SIZE-1, y:BOARD_SIZE-1};
-    case 'green': return {x:0, y:BOARD_SIZE-1};
-    default: return null;
-  }
-}
-
         </div>
         <h4 style={{marginTop:16}}>Scores</h4>
         <pre style={{background:'#f9f9f9', padding:8}}>{JSON.stringify(game?.scores||{}, null, 2)}</pre>
@@ -267,6 +280,7 @@ function cornerFor(color){
     </div>
   );
 }
+
 
 
 
